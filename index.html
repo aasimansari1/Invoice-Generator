@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Invoice Generator</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- jsPDF for PDF export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- html2canvas for PDF rendering and image export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+  <!-- Top navigation bar -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-logo">IG</div>
+      <div>
+        <h1>Invoice Generator</h1>
+        <p class="subtitle">Create, preview, and download professional invoices</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <button id="historyBtn" class="btn btn-ghost" title="View invoice history">History</button>
+      <button id="themeToggle" class="btn btn-ghost" title="Toggle dark mode">Dark Mode</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- ============== FORM PANEL ============== -->
+    <section class="panel form-panel">
+      <h2 class="panel-title">Invoice Details</h2>
+
+      <!-- Company Information -->
+      <fieldset class="group">
+        <legend>Company Information</legend>
+        <div class="grid two">
+          <div class="field">
+            <label for="companyName">Company Name</label>
+            <input id="companyName" type="text" placeholder="Your Company Pvt. Ltd." />
+          </div>
+          <div class="field">
+            <label for="companyEmail">Company Email</label>
+            <input id="companyEmail" type="email" placeholder="hello@company.com" />
+          </div>
+          <div class="field">
+            <label for="companyPhone">Company Phone</label>
+            <input id="companyPhone" type="text" placeholder="+91 90000 00000" />
+          </div>
+          <div class="field">
+            <label for="companyAddress">Company Address</label>
+            <input id="companyAddress" type="text" placeholder="Street, City, State, PIN" />
+          </div>
+          <div class="field">
+            <label for="companyGSTIN">GSTIN (optional)</label>
+            <input id="companyGSTIN" type="text" placeholder="22AAAAA0000A1Z5" />
+          </div>
+          <div class="field">
+            <label for="currencySymbol">Currency Symbol</label>
+            <select id="currencySymbol">
+              <option value="₹" selected>₹ Indian Rupee</option>
+              <option value="$">$ US Dollar</option>
+              <option value="€">€ Euro</option>
+              <option value="£">£ British Pound</option>
+              <option value="¥">¥ Japanese Yen</option>
+              <option value="A$">A$ Australian Dollar</option>
+            </select>
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- Invoice Meta -->
+      <fieldset class="group">
+        <legend>Invoice Meta</legend>
+        <div class="grid three">
+          <div class="field">
+            <label for="invoiceNumber">Invoice Number</label>
+            <input id="invoiceNumber" type="text" readonly />
+          </div>
+          <div class="field">
+            <label for="invoiceDate">Date</label>
+            <input id="invoiceDate" type="text" readonly />
+          </div>
+          <div class="field">
+            <label for="paymentStatus">Status</label>
+            <select id="paymentStatus">
+              <option value="Unpaid">Unpaid</option>
+              <option value="Paid">Paid</option>
+              <option value="Pending">Pending</option>
+            </select>
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- Customer Details -->
+      <fieldset class="group">
+        <legend>Customer Details</legend>
+        <div class="grid two">
+          <div class="field">
+            <label for="customerName">Customer Name <span class="req">*</span></label>
+            <input id="customerName" type="text" placeholder="John Doe" required />
+          </div>
+          <div class="field">
+            <label for="customerPhone">Phone Number <span class="req">*</span></label>
+            <input id="customerPhone" type="text" placeholder="+91 98765 43210" required />
+          </div>
+          <div class="field full">
+            <label for="customerAddress">Address <span class="req">*</span></label>
+            <textarea id="customerAddress" rows="2" placeholder="Customer billing address" required></textarea>
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- Items -->
+      <fieldset class="group">
+        <legend>Products / Services</legend>
+        <div class="items-table-wrap">
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th style="width:38%">Item</th>
+                <th style="width:15%">Qty</th>
+                <th style="width:20%">Price</th>
+                <th style="width:20%">Total</th>
+                <th style="width:7%"></th>
+              </tr>
+            </thead>
+            <tbody id="itemsBody"></tbody>
+          </table>
+        </div>
+        <button type="button" id="addItemBtn" class="btn btn-secondary">+ Add Item</button>
+      </fieldset>
+
+      <!-- Charges -->
+      <fieldset class="group">
+        <legend>Tax & Discount</legend>
+        <div class="grid three">
+          <div class="field">
+            <label for="taxRate">Tax / GST (%)</label>
+            <input id="taxRate" type="number" min="0" step="0.01" value="5" />
+          </div>
+          <div class="field">
+            <label for="discountValue">Discount</label>
+            <input id="discountValue" type="number" min="0" step="0.01" value="0" />
+          </div>
+          <div class="field">
+            <label for="discountType">Discount Type</label>
+            <select id="discountType">
+              <option value="flat">Flat Amount</option>
+              <option value="percent">Percentage (%)</option>
+            </select>
+          </div>
+          <div class="field full">
+            <label for="notes">Notes (optional)</label>
+            <textarea id="notes" rows="2" placeholder="Thank you for your business!"></textarea>
+          </div>
+        </div>
+      </fieldset>
+
+      <!-- Action Buttons -->
+      <div class="actions">
+        <button type="button" id="saveBtn" class="btn btn-primary">Save Invoice</button>
+        <button type="button" id="downloadPdfBtn" class="btn btn-success">Download PDF</button>
+        <button type="button" id="downloadImgBtn" class="btn btn-info">Export Image</button>
+        <button type="button" id="printBtn" class="btn btn-secondary">Print</button>
+        <button type="button" id="resetBtn" class="btn btn-danger">Reset</button>
+      </div>
+    </section>
+
+    <!-- ============== PREVIEW PANEL ============== -->
+    <section class="panel preview-panel">
+      <h2 class="panel-title">Live Preview</h2>
+
+      <div class="invoice-paper" id="invoicePreview">
+        <!-- Header -->
+        <div class="inv-header">
+          <div class="inv-company">
+            <div class="inv-logo">IG</div>
+            <div>
+              <h2 id="prevCompanyName">Your Company</h2>
+              <p id="prevCompanyAddress" class="muted">Address line</p>
+              <p class="muted">
+                <span id="prevCompanyPhone"></span>
+                <span id="prevCompanyEmailWrap"> · <span id="prevCompanyEmail"></span></span>
+              </p>
+              <p id="prevCompanyGSTINWrap" class="muted hidden">GSTIN: <span id="prevCompanyGSTIN"></span></p>
+            </div>
+          </div>
+          <div class="inv-meta">
+            <h3>INVOICE</h3>
+            <p><strong>No:</strong> <span id="prevInvoiceNumber"></span></p>
+            <p><strong>Date:</strong> <span id="prevInvoiceDate"></span></p>
+            <p>
+              <strong>Status:</strong>
+              <span id="prevStatus" class="status-badge unpaid">Unpaid</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Bill To -->
+        <div class="inv-billto">
+          <h4>Bill To</h4>
+          <p><strong id="prevCustomerName">—</strong></p>
+          <p id="prevCustomerAddress" class="muted">—</p>
+          <p id="prevCustomerPhone" class="muted">—</p>
+        </div>
+
+        <!-- Items Table -->
+        <table class="inv-table">
+          <thead>
+            <tr>
+              <th style="width:8%">#</th>
+              <th>Item</th>
+              <th style="width:12%" class="r">Qty</th>
+              <th style="width:18%" class="r">Price</th>
+              <th style="width:20%" class="r">Total</th>
+            </tr>
+          </thead>
+          <tbody id="prevItemsBody">
+            <tr><td colspan="5" class="muted center">No items added yet.</td></tr>
+          </tbody>
+        </table>
+
+        <!-- Totals -->
+        <div class="inv-totals-wrap">
+          <div class="inv-notes">
+            <h4>Notes</h4>
+            <p id="prevNotes" class="muted">—</p>
+          </div>
+          <div class="inv-totals">
+            <div class="row"><span>Subtotal</span><span id="prevSubtotal">₹0.00</span></div>
+            <div class="row"><span>Tax (<span id="prevTaxRate">5</span>%)</span><span id="prevTaxAmount">₹0.00</span></div>
+            <div class="row"><span>Discount</span><span id="prevDiscount">−₹0.00</span></div>
+            <div class="row grand"><span>Grand Total</span><span id="prevGrandTotal">₹0.00</span></div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="inv-footer">
+          <p>This is a computer-generated invoice and does not require a signature.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============== HISTORY MODAL ============== -->
+  <div id="historyModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Invoice History</h3>
+        <button class="btn btn-ghost" data-close aria-label="Close">×</button>
+      </div>
+      <div class="modal-body">
+        <input id="historySearch" type="text" placeholder="Search by invoice no, customer, status..." />
+        <div id="historyList" class="history-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============== TOAST ============== -->
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
